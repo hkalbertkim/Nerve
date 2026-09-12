@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "checks": [
+    "node drag updates edges and survives polling",
+    "zoom, background pan and reset",
+    "four sibling nodes do not overlap",
+    "Markdown headings, tables, lists and code render without embedded scripts",
+    "separate attention approval resumes original mission",
+    "downloaded real totals",
+    "reload persistence",
+    "successful pathway saves and reuses fresh source without old approvals",
+    "mobile attention has no horizontal overflow",
+    "UI 3 selection does not resolve until confirmed",
+    "original 42-event P0 completes",
+    "no JavaScript page errors"
+  ],
+  "liveOpenAI": false
+}

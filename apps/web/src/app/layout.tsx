@@ -3,6 +3,7 @@ import { Providers } from "@/components/providers";
 import "@copilotkit/react-core/v2/styles.css";
 import "./globals.css";
 import "./nerve.css";
+import "./ui3.css";
 
 export const metadata: Metadata = {
   title: "Nerve — One Human, Many Agents",

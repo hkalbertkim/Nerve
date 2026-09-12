@@ -13,3 +13,5 @@ apps/mobile/.expo/
 
 # Web approval and attempt metadata (not task storage)
 .data/
+
+.nerve-data/

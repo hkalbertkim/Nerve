@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { NerveNavigation } from "@/components/nerve-navigation";
 import { demoEvents, decisionOptionsFor } from "@/lib/demo-scenario";
 import {
   requiresHuman,
@@ -26,6 +27,7 @@ const EVENT_INTERVAL_MS = 170;
 
 export default function Home() {
   const [status, setStatus] = useState<RunStatus>("idle");
+  const [selectedOption, setSelectedOption] = useState("");
   const [cursor, setCursor] = useState(0);
   const [processed, setProcessed] = useState<ProcessedEvent[]>([]);
   const [pending, setPending] = useState<PendingDecision | null>(null);
@@ -76,6 +78,7 @@ export default function Home() {
     setCursor(0);
     setProcessed([]);
     setPending(null);
+    setSelectedOption("");
     setOutcome("Agents are working. Nerve is filtering the noise.");
   }
 
@@ -100,6 +103,7 @@ export default function Home() {
 
     const next = cursor + 1;
     setPending(null);
+    setSelectedOption("");
     setCursor(next);
     setStatus(next >= demoEvents.length ? "complete" : "running");
   }
@@ -109,7 +113,8 @@ export default function Home() {
   const options = pending ? decisionOptionsFor(pending.event) : [];
 
   return (
-    <main className="nerve-shell">
+    <main className="nerve-shell nerve-ui3">
+      <NerveNavigation />
       <header className="nerve-hero">
         <div>
           <p className="nerve-kicker">Agents, Everywhere · AI Tinkerers Paris</p>
@@ -118,6 +123,7 @@ export default function Home() {
           <p className="nerve-subtitle">The Attention Router for AI Agents</p>
         </div>
         <div className="nerve-hero-actions">
+          <a className="nerve-button" href="/missions">Mission workspace ↗</a>
           <span className="nerve-state" data-state={status}>{status}</span>
           <button className="nerve-button nerve-button-primary" onClick={startDemo}>
             {status === "idle" ? "Run demo" : "Restart demo"}
@@ -151,7 +157,7 @@ export default function Home() {
           <div className="nerve-panel-head">
             <div>
               <span className="nerve-label">AGENT ACTIVITY</span>
-              <h2>Everything happening in the background</h2>
+              <h2>Live activity</h2>
             </div>
             <span className="nerve-muted">Routine work stays quiet</span>
           </div>
@@ -171,7 +177,7 @@ export default function Home() {
                     <span>{event.agent}</span>
                   </div>
                   <strong>{event.title}</strong>
-                  <p>{event.detail}</p>
+                  <details className="nerve-event-context"><summary>View context</summary><p>{event.detail}</p></details>
                   {resolution ? <div className="nerve-resolution">Human: {resolution}</div> : null}
                 </article>
               ))
@@ -183,7 +189,7 @@ export default function Home() {
           <div className="nerve-panel-head">
             <div>
               <span className="nerve-label">HUMAN ATTENTION</span>
-              <h2>Only what actually needs you</h2>
+              <h2>{pending ? "Human attention required" : "Human attention"}</h2>
             </div>
           </div>
 
@@ -210,13 +216,15 @@ export default function Home() {
                   <button
                     key={option.id}
                     className="nerve-option"
-                    onClick={() => resolvePending(option.id, option.label)}
+                    aria-pressed={selectedOption === option.id}
+                    onClick={() => setSelectedOption(option.id)}
                   >
                     <strong>{option.label}</strong>
                     <span>{option.detail}</span>
                   </button>
                 ))}
               </div>
+              <button className="nerve-button nerve-button-primary nerve-confirm" disabled={!selectedOption} onClick={() => { const option = options.find(o => o.id === selectedOption); if (option) resolvePending(option.id, option.label); }}>Confirm decision <span aria-hidden="true">→</span></button>
             </div>
           ) : status === "complete" ? (
             <div className="nerve-finale">
