@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "liveOpenAI": false,
+  "composerCreateInterceptedForQC": true,
+  "missionId": "79267aa5-40e8-4ba5-89c7-e65079179a86",
+  "specialists": 3,
+  "humanDecisions": 1,
+  "artifacts": 1,
+  "sameMissionResumed": true,
+  "fiveSections": true,
+  "logoLoaded": true,
+  "mobileOverflow": false,
+  "pageErrors": []
+}

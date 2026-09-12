@@ -1,4 +1,42 @@
 /* UI 3: scoped to Nerve so inherited voice and agent surfaces keep their theme. */
+/* Krako is a presentation preset; the shared runtime remains unchanged. */
+.nerve-ui3 .krako-demo-link { margin-bottom:20px; }
+.krako-identity { display:flex; align-items:center; gap:32px; padding:32px; margin:20px 0; border:1px solid #ff781b55; background:linear-gradient(120deg,#ff781b0c,#0d1013); border-radius:16px; }
+.krako-identity img { object-fit:contain; flex-shrink:0; background:#fff; border-radius:10px; }
+.krako-identity h2 { font-size:clamp(28px,4vw,54px); letter-spacing:-.06em; margin:8px 0; }
+.krako-identity .krako-goal { font-size:20px; line-height:1.35; }
+.krako-identity .nerve-muted { max-width:780px; white-space:pre-line; }
+.krako-identity.is-compact { padding:16px 22px; gap:20px; }
+.krako-identity.is-compact img { width:70px; height:70px; }
+.krako-identity.is-compact h2 { font-size:30px; }
+.krako-identity.is-compact .krako-goal { font-size:14px; margin:0; }
+.krako-summary { display:flex; gap:0; margin:28px 0; border-block:1px solid #34383e; }
+.krako-summary > span { flex:1; padding:20px 16px; color:#b6bfcb; }
+.krako-summary strong { color:#ff781b; font-size:40px; margin-right:8px; }
+.krako-launch-board { display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:14px; }
+.krako-launch-board > div { min-width:0; min-height:340px; padding:24px; display:flex; flex-direction:column; justify-content:space-between; overflow:hidden; }
+.krako-launch-board p,.krako-launch-board span { font:10px monospace; letter-spacing:.1em; }
+.krako-launch-board img { object-fit:contain; max-width:100%; height:auto; }
+.krako-poster { background:#f4f1e9; color:#101010; }
+.krako-poster img { align-self:center; width:65%; mix-blend-mode:multiply; }
+.krako-poster strong { font-size:clamp(24px,3vw,46px); letter-spacing:-.06em; }
+.krako-social { background:#ff781b; color:#111; }
+.krako-social > div { position:relative; display:flex; align-items:center; }
+.krako-social > div span { font:bold clamp(60px,7vw,100px) sans-serif; letter-spacing:-.1em; }
+.krako-social img { width:70px; height:70px; background:white; border-radius:50%; margin-left:auto; }
+.krako-social strong { font-size:38px; letter-spacing:-.07em; }
+.krako-landing { background:#08090a; border:1px solid #34383e; }
+.krako-landing img { background:white; border-radius:50%; width:45px; height:45px; }
+.krako-landing strong { font-size:clamp(46px,5vw,70px); line-height:.9; letter-spacing:-.07em; }
+.krako-cta-preview { border:1px solid #ff781b; padding:12px; color:#ff923e; font-size:12px; }
+.krako-deliverables { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin:26px 0; }
+.krako-deliverable { min-width:0; border:1px solid #34383e; border-top:2px solid #ff781b; padding:24px; border-radius:8px; overflow-wrap:anywhere; }
+.krako-deliverable h3 { font-size:25px; margin:10px 0 20px; }
+.krako-deliverable:has(h3):first-child:last-child { grid-column:1/-1; }
+.krako-decision h3 { font-size:26px; line-height:1.15; }
+.krako-decision details { margin:12px 0; }
+@media(max-width:1000px) { .krako-launch-board { grid-template-columns:1fr; } .krako-launch-board > div { min-height:260px; } .krako-poster img { width:150px; } .krako-deliverables { grid-template-columns:1fr; } }
+@media(max-width:600px) { .krako-identity { flex-direction:column; align-items:flex-start; padding:20px; gap:16px; } .krako-identity.is-compact { flex-direction:row; padding:14px; } .krako-identity.is-compact .krako-goal { display:none; } .krako-summary > span { padding:12px 8px; font-size:12px; } .krako-summary strong { display:block; font-size:30px; } .krako-deliverable { padding:18px; } }
 body:has(.nerve-ui3) { background:#080a0c; }
 .nerve-ui3 { --ground:#080a0c; --surface:#0d1013; --border:#262a30; --text:#f4f5f7; --muted:#a5adbd; --accent:#ff781b; color-scheme:dark; color:var(--text); max-width:1800px; min-height:100vh; margin-left:224px; padding:32px; background:radial-gradient(ellipse at 100% 0%,#ff651510,transparent 38%); }
 .nerve-ui3 a { color:inherit; text-decoration:none; }
@@ -99,3 +137,12 @@ body:has(.nerve-ui3) { background:#080a0c; }
 .nerve-ui3 .nerve-event[data-class=APPROVE] .nerve-class { color:#ffb16c; }
 @media(max-width:1100px) { .nerve-ui3 .nerve-stream { max-height:280px; } }
 .nerve-ui3 .nerve-decision-card[data-class] .nerve-class,.nerve-ui3 .nerve-event[data-class=ASK] .nerve-class { color:#ffb16c; }
+
+.krako-shirt { position:relative; align-self:center; width:240px; height:220px; background:#111518; clip-path:polygon(28% 0,40% 0,44% 7%,56% 7%,60% 0,72% 0,100% 22%,85% 44%,73% 35%,73% 100%,27% 100%,27% 35%,15% 44%,0 22%); }
+.krako-poster .krako-shirt img { position:absolute; width:42px; height:42px; top:58px; left:130px; mix-blend-mode:normal; }
+.krako-attention-surface > .nerve-hero, .krako-attention-surface > .nerve-taskbar { display:none; }
+.krako-attention-surface .krako-identity { margin-top:0; }
+.krako-attention-surface .mission-attention > h2 { font-size:18px; }
+.krako-attention-surface .krako-decision h3 { margin:8px 0 14px; }
+.krako-attention-surface .krako-decision .mission-markdown { font-size:14px; }
+.krako-attention-surface .mission-attention details { margin:10px 0; }
