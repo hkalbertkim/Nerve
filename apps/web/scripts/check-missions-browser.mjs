@@ -60,6 +60,9 @@ try {
   const attention = await context.newPage(); attention.on('pageerror', e => errors.push(e.message));
   await attention.goto(`${base}/attention?id=${missionId}`);
   await attention.getByRole('button', { name: 'Approve result' }).waitFor();
+  await attention.setViewportSize({ width: 390, height: 844 });
+  assert.ok(await attention.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  await attention.screenshot({ path: `${evidence}/ui3-attention-pending-mobile.png`, fullPage: true });
   await attention.getByLabel('Decision note').fill('Reviewed from the separate attention surface.');
   await attention.getByRole('button', { name: 'Approve result' }).click();
   await page.getByRole('heading', { name: 'Mission result', exact: true }).waitFor({ timeout: 15000 });
@@ -106,13 +109,25 @@ try {
   await layout.close();
   // Preserve the existing P0 workflow: both required decisions still complete 42 events.
   await page.goto(base); await page.getByRole('button', { name: 'Run demo', exact: true }).click();
-  await page.locator('.nerve-option').first().waitFor({ timeout: 15000 }); await page.locator('.nerve-option').first().click();
-  await page.locator('.nerve-option').first().waitFor({ timeout: 15000 }); await page.locator('.nerve-option').first().click();
+  await page.locator('.nerve-option').first().waitFor({ timeout: 15000 });
+  assert.equal(await page.getByRole('button', { name: 'Confirm decision' }).isEnabled(), false);
+  await page.locator('.nerve-option').first().click();
+  assert.equal(await page.locator('.nerve-state').getAttribute('data-state'), 'paused');
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: `${evidence}/ui3-decision-${await page.locator(".nerve-option").first().innerText().then(t => t.startsWith("Use") ? "pricing" : "launch")}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Confirm decision' }).click();
+  await page.locator('.nerve-option').first().waitFor({ timeout: 15000 });
+  assert.equal(await page.getByRole('button', { name: 'Confirm decision' }).isEnabled(), false);
+  await page.locator('.nerve-option').first().click();
+  assert.equal(await page.locator('.nerve-state').getAttribute('data-state'), 'paused');
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: `${evidence}/ui3-decision-${await page.locator(".nerve-option").first().innerText().then(t => t.startsWith("Use") ? "pricing" : "launch")}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Confirm decision' }).click();
   await page.getByText('Nerve knew which two.', { exact: true }).waitFor({ timeout: 15000 });
   assert.equal(await page.locator('.nerve-state').getAttribute('data-state'), 'complete');
   assert.equal(await page.locator('[data-nextjs-dialog]').count(), 0);
   assert.deepEqual(errors, []);
-  const report = { passed: true, checks: ['node drag updates edges and survives polling', 'zoom, background pan and reset', 'four sibling nodes do not overlap', 'Markdown headings, tables, lists and code render without embedded scripts', 'separate attention approval resumes original mission', 'downloaded real totals', 'reload persistence', 'successful pathway saves and reuses fresh source without old approvals', 'mobile attention has no horizontal overflow', 'original 42-event P0 completes', 'no JavaScript page errors'], liveOpenAI: false };
+  const report = { passed: true, checks: ['node drag updates edges and survives polling', 'zoom, background pan and reset', 'four sibling nodes do not overlap', 'Markdown headings, tables, lists and code render without embedded scripts', 'separate attention approval resumes original mission', 'downloaded real totals', 'reload persistence', 'successful pathway saves and reuses fresh source without old approvals', 'mobile attention has no horizontal overflow', 'UI 3 selection does not resolve until confirmed', 'original 42-event P0 completes', 'no JavaScript page errors'], liveOpenAI: false };
   await writeFile(`${evidence}/browser-result.json`, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
 } catch (error) {

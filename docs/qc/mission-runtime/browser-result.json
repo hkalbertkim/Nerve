@@ -10,6 +10,7 @@
     "reload persistence",
     "successful pathway saves and reuses fresh source without old approvals",
     "mobile attention has no horizontal overflow",
+    "UI 3 selection does not resolve until confirmed",
     "original 42-event P0 completes",
     "no JavaScript page errors"
   ],

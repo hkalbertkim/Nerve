@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import type { MissionRun, LearnedPathway } from '@/lib/mission-runtime-types';
 import { NerveGraph } from './nerve-graph';
 import { MissionMarkdown } from './mission-markdown';
+import { NerveNavigation } from './nerve-navigation';
 
 export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: boolean }) {
   const [run, setRun] = useState<MissionRun | null>(null);
@@ -67,7 +68,8 @@ export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: bo
   const selectedTask = run?.tasks.find(t => t.capabilityId === selectedNode);
   const working = run?.tasks.filter(t => t.status === 'complete').length ?? 0;
 
-  return <main className="nerve-shell mission-shell">
+  return <main className="nerve-shell mission-shell nerve-ui3">
+    <NerveNavigation missionId={missionId} />
     <header className="nerve-hero"><div><p className="nerve-kicker">{attentionOnly ? 'Human attention inbox' : 'Mission runtime'}</p><h1>Nerve</h1><p className="nerve-tagline">One Human, Many Agents.</p></div>
       <nav className="mission-nav"><a href={attentionOnly && missionId ? `/missions?id=${missionId}` : '/'}>{attentionOnly ? 'Open workspace' : 'P0 demo'}</a>{run && <span className="nerve-state" data-state={run.state.status}>{run.state.status}</span>}</nav>
     </header>
@@ -85,12 +87,12 @@ export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: bo
     {run ? <>
       <section className="nerve-taskbar"><div><span className="nerve-label">ACTIVE MISSION · {run.mode === 'local' ? 'LOCAL TOOLS' : 'OPENAI SPECIALISTS'}</span><strong>{run.state.spec.goal}</strong><p>{run.error || run.state.events.at(-1)?.message}</p></div><div><strong>{working} / {run.tasks.length} tasks</strong><span>{run.state.attention.length} human requests · {run.state.artifacts.length} artifacts</span></div></section>
       {run.state.status === 'failed' && <button className="nerve-button" disabled={busy} onClick={() => void act({ operation: 'retry', id: missionId })}>Retry failed task</button>}
-      <div className={attentionOnly ? '' : 'mission-layout'}>
+      <div className={attentionOnly ? 'mission-attention-only' : `mission-layout${pending ? ' has-attention' : ''}`}>
         {!attentionOnly && <section className="mission-card"><h2>Dynamic Nerve Graph</h2><p className="nerve-muted">Select a capability to inspect its actual work. Edges reflect runtime handoffs.</p><NerveGraph key={run.state.spec.id} state={run.state} select={setSelectedNode}/>
           {selectedTask && <details open className="mission-node-detail"><summary>{selectedTask.name} · {selectedTask.status}</summary><MissionMarkdown>{selectedTask.output || selectedTask.instruction}</MissionMarkdown></details>}
           {selectedNode === 'memory' && <details open><summary>Shared mission / work / decision memory</summary><pre>{JSON.stringify(run.memory, null, 2)}</pre></details>}
         </section>}
-        <section className="mission-card" aria-live="polite"><h2>{pending ? 'Your decision is needed' : 'Human attention'}</h2>
+        <section className={`mission-card mission-attention${pending ? ' is-pending' : ''}`} aria-live="polite"><h2>{pending ? 'Your decision is needed' : 'Human attention'}</h2>
           {!attentionOnly && <a className="nerve-button mission-handoff" href={`/attention?id=${missionId}`} target="_blank" rel="noreferrer">Open separate attention screen ↗</a>}
           {pending ? <><span className="nerve-class">{pending.class}</span><h3>{pending.title}</h3><p>{pending.detail}</p>
             <details open={attentionOnly}><summary>Review actual draft</summary><MissionMarkdown>{run.memory.work.draft}</MissionMarkdown></details>
@@ -102,7 +104,7 @@ export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: bo
         </section>
       </div>
       {run.result && <section className="mission-card"><h2>Mission result</h2><div className="mission-form-row"><a className="nerve-button" href={`/api/missions?id=${missionId}&artifact=1`}>Download Markdown</a><button disabled={busy} className="nerve-button" onClick={() => void act({ operation: 'promote', id: missionId })}>Save successful pathway</button></div><MissionMarkdown>{run.result}</MissionMarkdown><details><summary>View Markdown source</summary><pre>{run.result}</pre></details></section>}
-      {!attentionOnly && <section className="mission-card"><h2>Execution & topology trace</h2><a href={`/api/missions?id=${missionId}&trace=1`}>Download full trace and memory</a><ol className="mission-trace">{[...run.state.events].reverse().map(event => <li key={event.id}><time>{event.at.slice(11, 19)}</time><span className="nerve-label">{event.type.replaceAll('_', ' ')}</span><p>{event.message}</p></li>)}</ol></section>}
+      {!attentionOnly && <details className="mission-card mission-trace-panel"><summary>Execution & topology trace</summary><a href={`/api/missions?id=${missionId}&trace=1`}>Download full trace and memory</a><ol className="mission-trace">{[...run.state.events].reverse().map(event => <li key={event.id}><time>{event.at.slice(11, 19)}</time><span className="nerve-label">{event.type.replaceAll('_', ' ')}</span><p>{event.message}</p></li>)}</ol></details>}
     </> : attentionOnly ? <p>Open this screen from a mission to receive its decisions.</p> : <p>Describe an outcome and supply context. Nerve composes the working topology as the context is inspected.</p>}
   </main>;
 }
