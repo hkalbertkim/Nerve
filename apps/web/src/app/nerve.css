@@ -574,3 +574,27 @@
 .mission-shell button:disabled { opacity:.55; cursor:wait; }
 @media(max-width:900px) { .mission-layout { grid-template-columns:1fr; } }
 @media(prefers-reduced-motion:reduce) { .nerve-event, .nerve-pulse { animation:none; } }
+
+.mission-graph-controls { display:flex; align-items:center; gap:8px; margin:12px 0; flex-wrap:wrap; }
+.mission-graph-controls .nerve-button { padding:6px 11px; font-size:12px; }
+.mission-graph-interactive { touch-action:none; user-select:none; cursor:grab; border:1px solid var(--border); border-radius:12px; }
+.mission-graph-interactive:active, .mission-graph-interactive .mission-graph-node:active { cursor:grabbing; }
+.mission-graph-interactive .mission-graph-node { cursor:grab; }
+
+.mission-markdown { font-size:14px; line-height:1.75; overflow-wrap:anywhere; margin-top:16px; }
+.mission-markdown > :first-child { margin-top:0; }
+.mission-markdown h1 { font-size:25px; line-height:1.35; margin:24px 0 14px; letter-spacing:-.02em; }
+.mission-markdown h2 { font-size:20px; line-height:1.4; margin:24px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.mission-markdown h3 { font-size:17px; margin:18px 0 8px; }
+.mission-markdown p { margin:10px 0; }
+.mission-markdown ul, .mission-markdown ol { padding-left:24px; margin:12px 0; }
+.mission-markdown li { margin:4px 0; }
+.mission-markdown blockquote { margin:16px 0; border-left:3px solid #6e80b2; padding:4px 16px; color:#536070; background:#f6f7fb; }
+.mission-markdown code { font-size:.9em; padding:2px 5px; border-radius:4px; background:#eef0f5; }
+.mission-markdown pre { max-height:none; overflow:auto; white-space:pre; }
+.mission-markdown pre code { background:none; padding:0; }
+.mission-table-scroll { overflow-x:auto; max-width:100%; margin:16px 0; }
+.mission-markdown table { width:100%; border-collapse:collapse; text-align:left; }
+.mission-markdown th, .mission-markdown td { border:1px solid var(--border); padding:9px 12px; }
+.mission-markdown th { background:#f0f3f8; font-weight:600; }
+.mission-markdown hr { border:0; border-top:1px solid var(--border); margin:24px 0; }

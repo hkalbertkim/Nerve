@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import type { MissionRun, LearnedPathway } from '@/lib/mission-runtime-types';
-import type { MissionState } from '@/lib/mission';
+import { NerveGraph } from './nerve-graph';
+import { MissionMarkdown } from './mission-markdown';
 
 export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: boolean }) {
   const [run, setRun] = useState<MissionRun | null>(null);
@@ -85,14 +86,14 @@ export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: bo
       <section className="nerve-taskbar"><div><span className="nerve-label">ACTIVE MISSION · {run.mode === 'local' ? 'LOCAL TOOLS' : 'OPENAI SPECIALISTS'}</span><strong>{run.state.spec.goal}</strong><p>{run.error || run.state.events.at(-1)?.message}</p></div><div><strong>{working} / {run.tasks.length} tasks</strong><span>{run.state.attention.length} human requests · {run.state.artifacts.length} artifacts</span></div></section>
       {run.state.status === 'failed' && <button className="nerve-button" disabled={busy} onClick={() => void act({ operation: 'retry', id: missionId })}>Retry failed task</button>}
       <div className={attentionOnly ? '' : 'mission-layout'}>
-        {!attentionOnly && <section className="mission-card"><h2>Dynamic Nerve Graph</h2><p className="nerve-muted">Select a capability to inspect its actual work. Edges reflect runtime handoffs.</p><NerveGraph state={run.state} select={setSelectedNode}/>
-          {selectedTask && <details open className="mission-node-detail"><summary>{selectedTask.name} · {selectedTask.status}</summary><pre>{selectedTask.output || selectedTask.instruction}</pre></details>}
+        {!attentionOnly && <section className="mission-card"><h2>Dynamic Nerve Graph</h2><p className="nerve-muted">Select a capability to inspect its actual work. Edges reflect runtime handoffs.</p><NerveGraph key={run.state.spec.id} state={run.state} select={setSelectedNode}/>
+          {selectedTask && <details open className="mission-node-detail"><summary>{selectedTask.name} · {selectedTask.status}</summary><MissionMarkdown>{selectedTask.output || selectedTask.instruction}</MissionMarkdown></details>}
           {selectedNode === 'memory' && <details open><summary>Shared mission / work / decision memory</summary><pre>{JSON.stringify(run.memory, null, 2)}</pre></details>}
         </section>}
         <section className="mission-card" aria-live="polite"><h2>{pending ? 'Your decision is needed' : 'Human attention'}</h2>
           {!attentionOnly && <a className="nerve-button mission-handoff" href={`/attention?id=${missionId}`} target="_blank" rel="noreferrer">Open separate attention screen ↗</a>}
           {pending ? <><span className="nerve-class">{pending.class}</span><h3>{pending.title}</h3><p>{pending.detail}</p>
-            <details open={attentionOnly}><summary>Review actual draft</summary><pre>{run.memory.work.draft}</pre></details>
+            <details open={attentionOnly}><summary>Review actual draft</summary><MissionMarkdown>{run.memory.work.draft}</MissionMarkdown></details>
             {run.memory.work.validate && <p>{run.memory.work.validate}</p>}
             <label>Decision note (optional)<textarea value={comment} maxLength={2000} onChange={e => setComment(e.target.value)} rows={2}/></label>
             <div className="mission-form-row"><button disabled={busy} className="nerve-button nerve-button-primary" onClick={() => void act({ operation: 'decide', id: missionId, attentionId: pending.id, approved: true, comment })}>Approve result</button><button disabled={busy} className="nerve-button" onClick={() => void act({ operation: 'decide', id: missionId, attentionId: pending.id, approved: false, comment })}>Decline & cancel</button></div>
@@ -100,31 +101,8 @@ export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: bo
           {run.memory.decisions.map((d, i) => <p key={i} className="nerve-resolution">{d}</p>)}
         </section>
       </div>
-      {run.result && <section className="mission-card"><h2>Mission result</h2><div className="mission-form-row"><a className="nerve-button" href={`/api/missions?id=${missionId}&artifact=1`}>Download Markdown</a><button disabled={busy} className="nerve-button" onClick={() => void act({ operation: 'promote', id: missionId })}>Save successful pathway</button></div><pre className="mission-result">{run.result}</pre></section>}
+      {run.result && <section className="mission-card"><h2>Mission result</h2><div className="mission-form-row"><a className="nerve-button" href={`/api/missions?id=${missionId}&artifact=1`}>Download Markdown</a><button disabled={busy} className="nerve-button" onClick={() => void act({ operation: 'promote', id: missionId })}>Save successful pathway</button></div><MissionMarkdown>{run.result}</MissionMarkdown><details><summary>View Markdown source</summary><pre>{run.result}</pre></details></section>}
       {!attentionOnly && <section className="mission-card"><h2>Execution & topology trace</h2><a href={`/api/missions?id=${missionId}&trace=1`}>Download full trace and memory</a><ol className="mission-trace">{[...run.state.events].reverse().map(event => <li key={event.id}><time>{event.at.slice(11, 19)}</time><span className="nerve-label">{event.type.replaceAll('_', ' ')}</span><p>{event.message}</p></li>)}</ol></section>}
     </> : attentionOnly ? <p>Open this screen from a mission to receive its decisions.</p> : <p>Describe an outcome and supply context. Nerve composes the working topology as the context is inspected.</p>}
   </main>;
-}
-
-function NerveGraph({ state, select }: { state: MissionState; select: (id: string) => void }) {
-  const nodes = Object.values(state.nodes);
-  // Top-down depth layout from dependencies; shared memory stays on a separate rail.
-  const depth: Record<string, number> = { memory: 0 };
-  for (let pass = 0; pass < nodes.length; pass++) for (const node of nodes) {
-    if (node.capabilityId === 'memory') continue;
-    const parents = state.edges.filter(e => e.to === node.capabilityId && e.from !== 'memory');
-    depth[node.capabilityId] = Math.min(nodes.length, parents.length ? 1 + Math.max(...parents.map(e => depth[e.from] || 0)) : 1);
-  }
-  const positions: Record<string, { x: number; y: number }> = {};
-  for (const node of nodes) {
-    const level = depth[node.capabilityId] || 0;
-    const siblings = nodes.filter(n => (depth[n.capabilityId] || 0) === level);
-    positions[node.capabilityId] = { x: (siblings.findIndex(n => n.capabilityId === node.capabilityId) + 1) * 600 / (siblings.length + 1), y: 40 + level * 92 };
-  }
-  const height = 85 + Math.max(0, ...Object.values(depth)) * 92;
-  return <svg className="mission-graph" viewBox={`0 0 600 ${height}`} role="group" aria-label="Live mission capability graph">
-    <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/></marker></defs>
-    {state.edges.map(edge => { const from = positions[edge.from], to = positions[edge.to]; return <g key={edge.id}><path className={`mission-edge ${edge.status}`} d={`M${from.x},${from.y + 23} C${from.x},${from.y + 55} ${to.x},${to.y - 55} ${to.x},${to.y - 23}`} fill="none" markerEnd="url(#arrow)"><title>{edge.from} → {edge.to}: {edge.label} ({edge.status})</title></path></g>; })}
-    {nodes.map(node => { const position = positions[node.capabilityId], capability = state.capabilities[node.capabilityId]; return <g key={node.capabilityId} role="button" tabIndex={0} aria-label={`${capability.name}: ${node.status}`} onClick={() => select(node.capabilityId)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(node.capabilityId); } }} className={`mission-graph-node ${node.status}`} transform={`translate(${position.x - 86},${position.y - 23})`}><rect width="172" height="46" rx="10"/><text x="86" y="19" textAnchor="middle">{capability.name}</text><text className="mission-graph-status" x="86" y="35" textAnchor="middle">{capability.kind} · {node.status}</text><title>{node.reason}</title></g>; })}
-  </svg>;
 }

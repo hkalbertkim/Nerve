@@ -1,6 +1,10 @@
 {
   "passed": true,
   "checks": [
+    "node drag updates edges and survives polling",
+    "zoom, background pan and reset",
+    "four sibling nodes do not overlap",
+    "Markdown headings, tables, lists and code render without embedded scripts",
     "separate attention approval resumes original mission",
     "downloaded real totals",
     "reload persistence",

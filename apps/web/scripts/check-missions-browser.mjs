@@ -35,6 +35,27 @@ try {
   await page.getByRole('heading', { name: 'Your decision is needed' }).waitFor({ timeout: 45000 });
   assert.equal(await page.getByRole('link', { name: 'Download Markdown' }).count(), 0);
   const missionId = new URL(page.url()).searchParams.get('id'); assert.ok(missionId);
+  const producer = page.locator('[data-node-id="producer"]');
+  const originalPosition = await producer.getAttribute('transform');
+  const edge = page.locator('[data-edge-id="data-analyst->producer"]');
+  const originalEdge = await edge.getAttribute('d');
+  const box = await producer.boundingBox(); assert.ok(box);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down(); await page.mouse.move(box.x + box.width / 2 + 55, box.y + box.height / 2 - 20, { steps: 8 }); await page.mouse.up();
+  const movedPosition = await producer.getAttribute('transform');
+  assert.notEqual(movedPosition, originalPosition); assert.notEqual(await edge.getAttribute('d'), originalEdge);
+  await page.waitForTimeout(900); assert.equal(await producer.getAttribute('transform'), movedPosition);
+  await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  const camera = page.locator('[data-graph-camera]');
+  assert.match(await camera.getAttribute('transform'), /scale\(1.25\)/);
+  const cameraBefore = await camera.getAttribute('transform');
+  const canvas = await page.locator('.mission-graph-interactive').boundingBox(); assert.ok(canvas);
+  await page.mouse.move(canvas.x + 10, canvas.y + 10); await page.mouse.down();
+  await page.mouse.move(canvas.x + 40, canvas.y + 35, { steps: 5 }); await page.mouse.up();
+  assert.notEqual(await camera.getAttribute('transform'), cameraBefore);
+  await page.getByRole('button', { name: 'Reset layout' }).click();
+  assert.equal(await producer.getAttribute('transform'), originalPosition);
+  await producer.click(); await page.getByText('Result producer · complete', { exact: true }).waitFor();
   await page.screenshot({ path: `${evidence}/workspace-paused.png`, fullPage: true });
   const attention = await context.newPage(); attention.on('pageerror', e => errors.push(e.message));
   await attention.goto(`${base}/attention?id=${missionId}`);
@@ -62,6 +83,27 @@ try {
   const second = await context.request.get(`${base}/api/missions?id=${secondId}`);
   const secondRun = (await second.json()).run;
   assert.ok(secondRun.reusedPathwayId); assert.equal(secondRun.state.attention.length, 0); assert.match(secondRun.result, /sum 99/);
+  // View-only fixture exercises four sibling nodes and rich/untrusted Markdown.
+  const fixture = structuredClone(secondRun);
+  fixture.state.spec.id = 'layout-fixture'; fixture.state.attention = [];
+  fixture.result = '# Formatted result\n\n**Strong text**\n\n| Project | Users |\n| --- | ---: |\n| Alpha | 120 |\n\n- First action\n\n```js\nconst count = 120;\n```\n\n<script>window.nerveInjected=true</script>\n\n[Unsafe](javascript:alert(1))';
+  for (const id of ['extra-1', 'extra-2']) {
+    fixture.state.capabilities[id] = { id, name: id, kind: 'agent', source: 'internal' };
+    fixture.state.nodes[id] = { capabilityId: id, status: 'complete', joinedAt: new Date().toISOString() };
+    fixture.state.edges.push({ id: 'data-analyst->' + id, from: 'data-analyst', to: id, status: 'proven' });
+  }
+  const layout = await context.newPage(); layout.on('pageerror', e => errors.push(e.message));
+  await layout.route('**/api/missions?id=layout-fixture', route => route.fulfill({ json: { run: fixture } }));
+  await layout.goto(`${base}/missions?id=layout-fixture`);
+  await layout.getByRole('heading', { name: 'Formatted result', exact: true }).waitFor();
+  assert.equal(await layout.locator('.mission-markdown table').count(), 1);
+  assert.equal(await layout.locator('.mission-markdown strong').innerText(), 'Strong text');
+  assert.equal(await layout.locator('.mission-markdown pre code').innerText(), 'const count = 120;\n');
+  assert.equal(await layout.locator('.mission-markdown script').count(), 0);
+  assert.equal(await layout.locator('.mission-markdown a[href^="javascript:"]').count(), 0);
+  const siblings = await layout.locator('[data-node-id="producer"], [data-node-id="validator"], [data-node-id="extra-1"], [data-node-id="extra-2"]').evaluateAll(elements => elements.map(el => { const b = el.getBoundingClientRect(); return { left: b.left, right: b.right }; }).sort((a, b) => a.left - b.left));
+  for (let i = 1; i < siblings.length; i++) assert.ok(siblings[i].left > siblings[i - 1].right, 'Sibling nodes must not overlap');
+  await layout.close();
   // Preserve the existing P0 workflow: both required decisions still complete 42 events.
   await page.goto(base); await page.getByRole('button', { name: 'Run demo', exact: true }).click();
   await page.locator('.nerve-option').first().waitFor({ timeout: 15000 }); await page.locator('.nerve-option').first().click();
@@ -70,7 +112,7 @@ try {
   assert.equal(await page.locator('.nerve-state').getAttribute('data-state'), 'complete');
   assert.equal(await page.locator('[data-nextjs-dialog]').count(), 0);
   assert.deepEqual(errors, []);
-  const report = { passed: true, checks: ['separate attention approval resumes original mission', 'downloaded real totals', 'reload persistence', 'successful pathway saves and reuses fresh source without old approvals', 'mobile attention has no horizontal overflow', 'original 42-event P0 completes', 'no JavaScript page errors'], liveOpenAI: false };
+  const report = { passed: true, checks: ['node drag updates edges and survives polling', 'zoom, background pan and reset', 'four sibling nodes do not overlap', 'Markdown headings, tables, lists and code render without embedded scripts', 'separate attention approval resumes original mission', 'downloaded real totals', 'reload persistence', 'successful pathway saves and reuses fresh source without old approvals', 'mobile attention has no horizontal overflow', 'original 42-event P0 completes', 'no JavaScript page errors'], liveOpenAI: false };
   await writeFile(`${evidence}/browser-result.json`, JSON.stringify(report, null, 2));
   console.log(JSON.stringify(report, null, 2));
 } catch (error) {

@@ -58,7 +58,9 @@ Restart the server, select OpenAI specialists, describe an outcome, and paste re
 - `src/lib/server/mission-runtime.ts`: worker, context-driven task composition, disk memory, provider call, gates, retry, artifacts and pathways.
 - `src/lib/server/mission-http.ts`: validated HTTP commands and local origin boundary.
 - `src/app/api/missions/route.ts`: one worker instance per process.
-- `src/components/mission-workspace.tsx`: workspace, graph, and separate attention surface.
+- `src/components/mission-workspace.tsx`: workspace and separate attention surface.
+- `src/components/nerve-graph.tsx`: draggable nodes, background pan, zoom, and reset. View changes do not edit runtime dependencies.
+- `src/components/mission-markdown.tsx`: formatted task outputs, attention drafts, and final artifacts, with GFM tables and code blocks.
 - `src/lib/server/mission-runtime.test.ts`: outcome and regression tests.
 
 ## Browser QC
