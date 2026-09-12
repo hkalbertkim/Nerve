@@ -60,3 +60,13 @@ Restart the server, select OpenAI specialists, describe an outcome, and paste re
 - `src/app/api/missions/route.ts`: one worker instance per process.
 - `src/components/mission-workspace.tsx`: workspace, graph, and separate attention surface.
 - `src/lib/server/mission-runtime.test.ts`: outcome and regression tests.
+
+## Browser QC
+
+The optional browser script starts and stops its own local development server, blocks third-party requests, and writes screenshots plus a JSON result under `docs/qc/mission-runtime`. Install `playwright-core` and `@sparticuz/chromium` into a temporary directory, set `NERVE_BROWSER_MODULE_ROOT` to that directory, then run from the repository root:
+
+```bash
+NERVE_BROWSER_MODULE_ROOT=/path/to/browser-dependencies node apps/web/scripts/check-missions-browser.mjs
+```
+
+See the [QC checkpoint](checkpoints/2026-09-12_MISSION_RUNTIME_QC.md) for evidence and remaining live-environment blockers.

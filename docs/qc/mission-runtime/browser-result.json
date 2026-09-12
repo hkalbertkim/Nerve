@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "checks": [
+    "separate attention approval resumes original mission",
+    "downloaded real totals",
+    "reload persistence",
+    "successful pathway saves and reuses fresh source without old approvals",
+    "mobile attention has no horizontal overflow",
+    "original 42-event P0 completes",
+    "no JavaScript page errors"
+  ],
+  "liveOpenAI": false
+}

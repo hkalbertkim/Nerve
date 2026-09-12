@@ -22,12 +22,13 @@ try {
     if (server.exitCode !== null) throw new Error(serverLog);
     await new Promise(r => setTimeout(r, 500));
   }
-  browser = await chromium.launch({ executablePath: await binary.executablePath(), args: binary.args, headless: true });
+  browser = await chromium.launch({ executablePath: await binary.executablePath(), args: binary.args.filter(arg => !['--disable-web-security', '--allow-running-insecure-content'].includes(arg)), headless: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
   // No telemetry or third-party page resources are needed for this offline check.
   await context.route('**/*', route => new URL(route.request().url()).origin === base ? route.continue() : route.abort());
   context.setDefaultNavigationTimeout(120000);
-  const errors = []; const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
+  const errors = []; const page = await context.newPage();
+  page.on('response', async response => { if (response.url().includes('/api/missions') && response.status() >= 400) console.log('Mission HTTP error', response.status(), await response.text(), { origin: response.request().headers().origin, contentType: response.request().headers()['content-type'] }); }); page.on('pageerror', e => errors.push(e.message));
   await page.goto(`${base}/missions`); await page.getByRole('button', { name: 'Start mission' }).waitFor();
   await page.getByLabel('Require my review').check();
   await page.getByRole('button', { name: 'Start mission' }).click();
@@ -50,11 +51,12 @@ try {
   await attention.setViewportSize({ width: 390, height: 844 });
   await attention.screenshot({ path: `${evidence}/attention-mobile.png`, fullPage: true });
   assert.ok(await attention.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
-  await page.goto(`${base}/missions`); await page.getByText('New mission', { exact: true }).click();
+  await page.goto(`${base}/missions`); await page.getByRole('heading', { name: 'Mission result', exact: true }).waitFor(); await page.getByText('New mission', { exact: true }).click();
   await page.getByLabel('Pathway', { exact: true }).selectOption({ index: 1 });
   await page.getByLabel('Source context').fill('[{"revenue":99}]');
   await page.getByLabel('Require my review').uncheck();
   await page.getByRole('button', { name: 'Start mission' }).click();
+  await page.waitForURL(url => !!url.searchParams.get('id') && url.searchParams.get('id') !== missionId);
   await page.getByRole('heading', { name: 'Mission result', exact: true }).waitFor({ timeout: 15000 });
   const secondId = new URL(page.url()).searchParams.get('id'); assert.notEqual(secondId, missionId);
   const second = await context.request.get(`${base}/api/missions?id=${secondId}`);
@@ -65,7 +67,7 @@ try {
   await page.locator('.nerve-option').first().waitFor({ timeout: 15000 }); await page.locator('.nerve-option').first().click();
   await page.locator('.nerve-option').first().waitFor({ timeout: 15000 }); await page.locator('.nerve-option').first().click();
   await page.getByText('Nerve knew which two.', { exact: true }).waitFor({ timeout: 15000 });
-  assert.equal(await page.locator('.nerve-state').innerText(), 'complete');
+  assert.equal(await page.locator('.nerve-state').getAttribute('data-state'), 'complete');
   assert.equal(await page.locator('[data-nextjs-dialog]').count(), 0);
   assert.deepEqual(errors, []);
   const report = { passed: true, checks: ['separate attention approval resumes original mission', 'downloaded real totals', 'reload persistence', 'successful pathway saves and reuses fresh source without old approvals', 'mobile attention has no horizontal overflow', 'original 42-event P0 completes', 'no JavaScript page errors'], liveOpenAI: false };

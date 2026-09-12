@@ -18,6 +18,7 @@ export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: bo
   const [busy, setBusy] = useState(false);
   const [comment, setComment] = useState('');
   const [selectedNode, setSelectedNode] = useState('');
+  const [composerOpen, setComposerOpen] = useState(true);
 
   const loadCatalog = useCallback(async () => {
     const response = await fetch('/api/missions', { cache: 'no-store' });
@@ -27,7 +28,7 @@ export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: bo
   }, []);
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('id') || (attentionOnly ? '' : localStorage.getItem('nerve-current-mission')) || '';
-    setMissionId(id);
+    setMissionId(id); setComposerOpen(!id);
     void loadCatalog().catch(e => setError(e.message));
   }, [attentionOnly, loadCatalog]);
   useEffect(() => {
@@ -53,6 +54,7 @@ export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: bo
       if (!response.ok) throw new Error(value.error);
       if (value.run) {
         setRun(value.run); setMissionId(value.run.state.spec.id);
+        if (input.operation === 'create') { setComposerOpen(false); setSelectedNode(''); }
         localStorage.setItem('nerve-current-mission', value.run.state.spec.id);
         history.replaceState(null, '', `${attentionOnly ? '/attention' : '/missions'}?id=${value.run.state.spec.id}`);
       }
@@ -69,12 +71,12 @@ export function MissionWorkspace({ attentionOnly = false }: { attentionOnly?: bo
       <nav className="mission-nav"><a href={attentionOnly && missionId ? `/missions?id=${missionId}` : '/'}>{attentionOnly ? 'Open workspace' : 'P0 demo'}</a>{run && <span className="nerve-state" data-state={run.state.status}>{run.state.status}</span>}</nav>
     </header>
     {error && <p role="alert" className="mission-error">{error}</p>}{notice && <p role="status">{notice}</p>}
-    {!attentionOnly && <details className="mission-composer" open={!run}><summary>New mission</summary>
+    {!attentionOnly && <details className="mission-composer" open={composerOpen} onToggle={e => setComposerOpen(e.currentTarget.open)}><summary>New mission</summary>
       <form onSubmit={e => { e.preventDefault(); void act({ operation: 'create', goal, source, mode, requireReview: review, ...(pathwayId ? { pathwayId } : {}) }); }}>
         <label>Desired outcome<input value={goal} onChange={e => setGoal(e.target.value)} required minLength={3} maxLength={1000}/></label>
         <label>Source context<textarea value={source} onChange={e => setSource(e.target.value)} required maxLength={24000} rows={5}/></label>
         <div className="mission-form-row"><label>Execution mode<select value={mode} onChange={e => { setMode(e.target.value as 'local' | 'openai'); setPathwayId(''); }}><option value="local">Local tools · source analysis</option><option value="openai" disabled={!configured}>OpenAI specialists{configured ? '' : ' · key required'}</option></select></label>
-          <label>Pathway<select value={pathwayId} onChange={e => setPathwayId(e.target.value)}><option value="">Compose from context</option>{pathways.filter(p => p.mode === mode).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
+          <label>Pathway<select aria-label="Pathway" value={pathwayId} onChange={e => setPathwayId(e.target.value)}><option value="">Compose from context</option>{pathways.filter(p => p.mode === mode).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label></div>
         <label className="mission-check"><input type="checkbox" checked={review} onChange={e => setReview(e.target.checked)}/>Require my review before finalizing this result</label>
         <p className="nerve-muted">{mode === 'local' ? 'Local mode computes source statistics and packages context. It does not use an LLM.' : 'OpenAI specialists analyze and produce a deliverable using supplied context. No external actions.'}</p>
         <button disabled={busy} className="nerve-button nerve-button-primary" type="submit">Start mission</button>
