@@ -1,141 +1,262 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { demoEvents, decisionOptionsFor } from "@/lib/demo-scenario";
 import {
-  CopilotChat,
-  useConfigureSuggestions,
-} from "@copilotkit/react-core/v2";
-import { GenerativeUI } from "@/components/generative-ui";
-import { AppControl } from "@/components/app-control";
-import { findIncident, incidents, workspaceContext } from "@/lib/incidents";
-import { useWorkplace } from "@/lib/use-workplace";
-import { WorkplaceFollowups } from "@/components/workplace-followups";
+  requiresHuman,
+  routeAttention,
+  type AgentEvent,
+  type AttentionDecision,
+} from "@/lib/nerve";
+
+type RunStatus = "idle" | "running" | "paused" | "complete";
+
+type ProcessedEvent = {
+  event: AgentEvent;
+  decision: AttentionDecision;
+  resolution?: string;
+};
+
+type PendingDecision = {
+  event: AgentEvent;
+  decision: AttentionDecision;
+};
+
+const EVENT_INTERVAL_MS = 170;
 
 export default function Home() {
-  const [selectedId, setSelectedId] = useState<string>(incidents[0].id);
-  const workplace = useWorkplace(selectedId);
-  const { selectedIncident: incident } = workspaceContext(
-    selectedId,
-    workplace.status?.status === "connected" ? workplace.status.tasks : [],
-  );
-  const selectIncident = useCallback((id: string) => {
-    setSelectedId(findIncident(id).id);
-  }, []);
+  const [status, setStatus] = useState<RunStatus>("idle");
+  const [cursor, setCursor] = useState(0);
+  const [processed, setProcessed] = useState<ProcessedEvent[]>([]);
+  const [pending, setPending] = useState<PendingDecision | null>(null);
+  const [outcome, setOutcome] = useState("Waiting to start launch workflow.");
 
-  useConfigureSuggestions(
-    {
-      suggestions: [
-        {
-          title: "Summarize this incident",
-          message:
-            "Summarize the selected incident using the page context. What needs attention?",
-        },
-        {
-          title: "Propose a follow-up",
-          message:
-            "Prepare one useful Ambiguous follow-up for the selected incident. Show me the proposal before it is saved.",
-        },
-      ],
-      available: "before-first-message",
-    },
-    [],
+  const humanRequired = useMemo(
+    () => processed.filter((item) => requiresHuman(item.decision)).length,
+    [processed],
   );
+  const autoHandled = processed.length - humanRequired;
+  const humanResolved = useMemo(
+    () => processed.filter((item) => requiresHuman(item.decision) && item.resolution).length,
+    [processed],
+  );
+
+  useEffect(() => {
+    if (status !== "running") return;
+    if (cursor >= demoEvents.length) {
+      setStatus("complete");
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const event = demoEvents[cursor];
+      const decision = routeAttention(event);
+      const item: ProcessedEvent = { event, decision };
+
+      setProcessed((current) => [...current, item]);
+
+      if (requiresHuman(decision)) {
+        setPending({ event, decision });
+        setStatus("paused");
+        setOutcome(`Paused for human judgment: ${event.title}`);
+        return;
+      }
+
+      const next = cursor + 1;
+      setCursor(next);
+      setOutcome(`${event.agent}: ${event.title}`);
+      if (next >= demoEvents.length) setStatus("complete");
+    }, EVENT_INTERVAL_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [cursor, status]);
+
+  function startDemo() {
+    setStatus("running");
+    setCursor(0);
+    setProcessed([]);
+    setPending(null);
+    setOutcome("Agents are working. Nerve is filtering the noise.");
+  }
+
+  function resolvePending(optionId: string, label: string) {
+    if (!pending) return;
+
+    setProcessed((current) =>
+      current.map((item) =>
+        item.event.id === pending.event.id ? { ...item, resolution: label } : item,
+      ),
+    );
+
+    if (pending.event.id === "evt-14") {
+      setOutcome(optionId === "price-49" ? "Price locked at €49. Workflow resumed." : "Price locked at €39. Workflow resumed.");
+    } else if (pending.event.id === "evt-35") {
+      setOutcome(
+        optionId === "publish-us"
+          ? "U.S. launch approved. Europe is held for legal review."
+          : "Entire launch held pending legal review.",
+      );
+    }
+
+    const next = cursor + 1;
+    setPending(null);
+    setCursor(next);
+    setStatus(next >= demoEvents.length ? "complete" : "running");
+  }
+
+  const recent = processed.slice(-10).reverse();
+  const progress = Math.round((processed.length / demoEvents.length) * 100);
+  const options = pending ? decisionOptionsFor(pending.event) : [];
 
   return (
-    <>
-      <GenerativeUI />
-      <AppControl
-        selectedId={selectedId}
-        selectIncident={selectIncident}
-        workplace={workplace}
-      />
-      <main className="ck-workspace">
-        <header className="ck-workspace-header">
-          <div>
-            <p className="ck-eyebrow">Agents, everywhere · Web example</p>
-            <h1>Incident assistant</h1>
-            <p className="ck-intro">
-              Pick an incident. Ask your assistant. Review a follow-up.
-            </p>
-          </div>
-          <span className="ck-tag">Sample data</span>
-        </header>
-
-        <div className="ck-workspace-grid">
-          <section className="ck-panel" aria-labelledby="incident-title">
-            <div className="ck-incident-picker">
-              <label htmlFor="incident-select">Incident</label>
-              <select
-                id="incident-select"
-                value={selectedId}
-                onChange={(event) => selectIncident(event.target.value)}
-              >
-                {incidents.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.id} · {item.service}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="ck-detail">
-              <span className="ck-status-label">{incident.status}</span>
-              <h2 id="incident-title">{incident.title}</h2>
-              <p>{incident.summary}</p>
-              <details className="ck-more" key={incident.id}>
-                <summary>Details &amp; timeline</summary>
-                <dl className="ck-detail-facts">
-                  <div>
-                    <dt>Incident lead</dt>
-                    <dd>{incident.owner}</dd>
-                  </div>
-                  <div>
-                    <dt>Severity</dt>
-                    <dd>{incident.severity}</dd>
-                  </div>
-                  <div>
-                    <dt>Last update</dt>
-                    <dd>{incident.updated}</dd>
-                  </div>
-                </dl>
-                <h3>Impact</h3>
-                <p>{incident.impact}</p>
-                <h3>Timeline</h3>
-                <ol className="ck-timeline">
-                  {incident.timeline.map((event) => (
-                    <li key={event.time}>
-                      <time>{event.time} UTC</time>
-                      <div>
-                        <strong>{event.author}</strong>
-                        <p>{event.detail}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </details>
-            </div>
-
-            <WorkplaceFollowups incidentId={selectedId} workplace={workplace} />
-          </section>
-
-          <section
-            className="ck-panel ck-assistant"
-            aria-labelledby="assistant-title"
-          >
-            <header className="ck-assistant-header">
-              <h2 id="assistant-title">Ask assistant</h2>
-              <p>It can read this incident and prepare follow-ups.</p>
-            </header>
-            <CopilotChat
-              className="ck-chat"
-              labels={{
-                welcomeMessageText: "What needs attention?",
-                chatInputPlaceholder: "Ask about this incident…",
-              }}
-            />
-          </section>
+    <main className="nerve-shell">
+      <header className="nerve-hero">
+        <div>
+          <p className="nerve-kicker">Agents, Everywhere · AI Tinkerers Paris</p>
+          <h1>Nerve</h1>
+          <p className="nerve-tagline">One Human, Many Agents.</p>
+          <p className="nerve-subtitle">The Attention Router for AI Agents</p>
         </div>
-      </main>
-    </>
+        <div className="nerve-hero-actions">
+          <span className="nerve-state" data-state={status}>{status}</span>
+          <button className="nerve-button nerve-button-primary" onClick={startDemo}>
+            {status === "idle" ? "Run demo" : "Restart demo"}
+          </button>
+        </div>
+      </header>
+
+      <section className="nerve-taskbar" aria-label="Launch task status">
+        <div>
+          <span className="nerve-label">ACTIVE WORK</span>
+          <strong>Launch Nerve Beta</strong>
+          <p>{outcome}</p>
+        </div>
+        <div className="nerve-progress-wrap">
+          <span>{processed.length} / {demoEvents.length} events</span>
+          <div className="nerve-progress" aria-label={`${progress}% complete`}>
+            <span style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      </section>
+
+      <section className="nerve-metrics" aria-label="Attention metrics">
+        <Metric label="Agent events" value={processed.length} suffix="/42" />
+        <Metric label="Auto-handled" value={autoHandled} />
+        <Metric label="Needed human" value={humanRequired} />
+        <Metric label="Human resolved" value={humanResolved} />
+      </section>
+
+      <section className="nerve-grid">
+        <div className="nerve-panel">
+          <div className="nerve-panel-head">
+            <div>
+              <span className="nerve-label">AGENT ACTIVITY</span>
+              <h2>Everything happening in the background</h2>
+            </div>
+            <span className="nerve-muted">Routine work stays quiet</span>
+          </div>
+
+          <div className="nerve-stream" aria-live="polite">
+            {recent.length === 0 ? (
+              <div className="nerve-empty">
+                <strong>No events yet.</strong>
+                <p>Run the demo to watch four agents work while Nerve protects human attention.</p>
+              </div>
+            ) : (
+              recent.map(({ event, decision, resolution }) => (
+                <article className="nerve-event" key={event.id} data-class={decision.class}>
+                  <div className="nerve-event-topline">
+                    <span className="nerve-class">{decision.class}</span>
+                    <span>#{String(event.index).padStart(2, "0")}</span>
+                    <span>{event.agent}</span>
+                  </div>
+                  <strong>{event.title}</strong>
+                  <p>{event.detail}</p>
+                  {resolution ? <div className="nerve-resolution">Human: {resolution}</div> : null}
+                </article>
+              ))
+            )}
+          </div>
+        </div>
+
+        <aside className="nerve-panel nerve-attention">
+          <div className="nerve-panel-head">
+            <div>
+              <span className="nerve-label">HUMAN ATTENTION</span>
+              <h2>Only what actually needs you</h2>
+            </div>
+          </div>
+
+          {pending ? (
+            <div className="nerve-decision-card" data-class={pending.decision.class}>
+              <div className="nerve-route-line">
+                <span className="nerve-class nerve-class-large">{pending.decision.class}</span>
+                <span className="nerve-route">ROUTE → {pending.decision.recommendedSurface.toUpperCase()}</span>
+              </div>
+              <h3>{pending.event.title}</h3>
+              <p>{pending.event.detail}</p>
+
+              <dl className="nerve-facts">
+                <div><dt>Risk</dt><dd>{pending.event.risk}</dd></div>
+                <div><dt>Urgency</dt><dd>{pending.event.urgency}</dd></div>
+                <div><dt>Reversible</dt><dd>{pending.event.reversible ? "yes" : "no"}</dd></div>
+                <div><dt>Workflow</dt><dd>paused</dd></div>
+              </dl>
+
+              <p className="nerve-reason">{pending.decision.reason}</p>
+
+              <div className="nerve-option-list">
+                {options.map((option) => (
+                  <button
+                    key={option.id}
+                    className="nerve-option"
+                    onClick={() => resolvePending(option.id, option.label)}
+                  >
+                    <strong>{option.label}</strong>
+                    <span>{option.detail}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : status === "complete" ? (
+            <div className="nerve-finale">
+              <span className="nerve-label">DEMO COMPLETE</span>
+              <div className="nerve-finale-number">42</div>
+              <p>agent actions</p>
+              <div className="nerve-finale-grid">
+                <div><strong>40</strong><span>handled autonomously</span></div>
+                <div><strong>2</strong><span>needed me</span></div>
+              </div>
+              <blockquote>Nerve knew which two.</blockquote>
+            </div>
+          ) : status === "running" ? (
+            <div className="nerve-quiet">
+              <div className="nerve-pulse" />
+              <strong>Nerve is quiet.</strong>
+              <p>Agents are working. No human judgment is needed right now.</p>
+            </div>
+          ) : (
+            <div className="nerve-quiet">
+              <strong>One human. Many agents.</strong>
+              <p>Run the demo. Nerve will stay silent until a decision genuinely requires you.</p>
+            </div>
+          )}
+        </aside>
+      </section>
+
+      <footer className="nerve-footer">
+        <strong>The conversation follows the work — not the app.</strong>
+        <span>One human. Many agents. Only the interruptions that matter.</span>
+      </footer>
+    </main>
+  );
+}
+
+function Metric({ label, value, suffix }: { label: string; value: number; suffix?: string }) {
+  return (
+    <div className="nerve-metric">
+      <span>{label}</span>
+      <strong>{value}{suffix}</strong>
+    </div>
   );
 }
