@@ -70,3 +70,13 @@ NERVE_BROWSER_MODULE_ROOT=/path/to/browser-dependencies node apps/web/scripts/ch
 ```
 
 See the [QC checkpoint](checkpoints/2026-09-12_MISSION_RUNTIME_QC.md) for evidence and remaining live-environment blockers.
+
+## Live OpenAI readiness check
+
+After the root `.env` contains a working `OPENAI_API_KEY`, run:
+
+```bash
+npm run check:missions:live --workspace web
+```
+
+This makes up to five real model calls using synthetic project data, verifies specialist planning and output, pauses before artifact finalization, authorizes only that local test artifact, checks persisted read-back, and saves a pathway. It prints no credentials. It creates a real mission and private QC JSON in the normal data directory, which can be opened in the workspace. This is an execution check; inspect the result separately for semantic quality. Without a key it exits with code 2 before creating a mission or making requests.
