@@ -118,6 +118,7 @@ export default function Home() {
           <p className="nerve-subtitle">The Attention Router for AI Agents</p>
         </div>
         <div className="nerve-hero-actions">
+          <a className="nerve-button" href="/missions">Mission workspace ↗</a>
           <span className="nerve-state" data-state={status}>{status}</span>
           <button className="nerve-button nerve-button-primary" onClick={startDemo}>
             {status === "idle" ? "Run demo" : "Restart demo"}

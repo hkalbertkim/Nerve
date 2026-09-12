@@ -534,3 +534,43 @@
   .nerve-muted { white-space: normal; }
   .nerve-footer { flex-direction: column; }
 }
+
+/* Mission workspace: graph and controls consume persisted runtime state. */
+.mission-nav, .mission-form-row { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+.mission-nav a, .mission-card a { text-decoration:underline; }
+.mission-composer, .mission-card { border:1px solid var(--border); border-radius:16px; padding:22px; margin-bottom:18px; background:var(--surface); min-width:0; }
+.mission-composer summary { cursor:pointer; font-weight:600; }
+.mission-composer form { display:grid; gap:15px; margin-top:18px; }
+.mission-shell label { display:grid; gap:6px; font-size:13px; width:100%; }
+.mission-shell input:not([type=checkbox]), .mission-shell textarea, .mission-shell select { width:100%; padding:11px; border:1px solid var(--border); border-radius:8px; background:white; color:var(--text); font:inherit; }
+.mission-shell .mission-check { display:flex; align-items:center; }
+.mission-form-row > label { flex:1; min-width:180px; }
+.mission-layout { display:grid; grid-template-columns:minmax(0, 1.5fr) minmax(300px, 1fr); gap:18px; }
+.mission-card h2 { margin:0 0 12px; font-size:20px; }
+.mission-card pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:420px; overflow:auto; padding:14px; background:#f5f6f8; border-radius:8px; font-size:12px; line-height:1.65; }
+.mission-card .mission-result { max-height:600px; }
+.mission-card details { margin:14px 0; }
+.mission-card .mission-form-row { margin-top:12px; }
+.mission-handoff { display:block; margin-bottom:20px; font-size:12px; }
+.mission-error { padding:14px; border:1px solid #cf7373; color:#8d2222; border-radius:10px; background:#fff5f5; }
+.mission-graph { width:100%; max-height:620px; margin-top:12px; }
+.mission-graph-node { cursor:pointer; }
+.mission-graph-node rect { fill:#f6f7fa; stroke:#b9c0cc; }
+.mission-graph-node text { fill:#202a36; font:600 12px sans-serif; }
+.mission-graph-node .mission-graph-status { font:10px monospace; fill:#556575; }
+.mission-graph-node.complete rect { fill:#ebf9f1; stroke:#4b9a73; }
+.mission-graph-node.working rect { fill:#edf1ff; stroke:#516ac4; stroke-width:2; }
+.mission-graph-node.blocked rect, .mission-graph-node.waiting rect { fill:#fff4dc; stroke:#c38920; }
+.mission-graph-node.failed rect { fill:#fff0f0; stroke:#be4848; }
+.mission-graph-node:focus rect { stroke:#182980; stroke-width:3; }
+.mission-edge { stroke:#b4bdcc; color:#8696a9; stroke-width:1.5; }
+.mission-edge.candidate { stroke-dasharray:5 5; }
+.mission-edge.proven { stroke:#529474; color:#529474; stroke-width:2; }
+.mission-edge.abandoned { stroke:#c07878; stroke-dasharray:3 5; }
+.mission-trace { list-style:none; padding:0; max-height:350px; overflow:auto; }
+.mission-trace li { border-top:1px solid var(--border); padding:10px 0; }
+.mission-trace time { font:11px monospace; margin-right:12px; color:var(--muted); }
+.mission-trace p { margin:4px 0; font-size:12px; }
+.mission-shell button:disabled { opacity:.55; cursor:wait; }
+@media(max-width:900px) { .mission-layout { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { .nerve-event, .nerve-pulse { animation:none; } }

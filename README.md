@@ -63,3 +63,12 @@ in the final implementation.
 
 Agents, Everywhere: Bots, Channels, & More — Global Hackathon  
 AI Tinkerers Paris — September 12, 2026
+
+## Working mission runtime
+
+Open `/missions` for persistent mission execution, a runtime-driven capability graph,
+a separate attention screen, downloadable results/traces, and reusable successful pathways.
+The original P0 demonstration remains at `/`.
+
+See [Mission runtime quickstart](docs/MISSION_RUNTIME_QUICKSTART.md) for installation,
+local and OpenAI execution modes, verification steps, and current limits.
