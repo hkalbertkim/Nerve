@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { Providers } from "@/components/providers";
 import "@copilotkit/react-core/v2/styles.css";
 import "./globals.css";
+import "./nerve.css";
 
 export const metadata: Metadata = {
-  title: "Incident assistant — Agents, Everywhere",
-  description: "Pick an incident, ask your assistant, and add a follow-up.",
+  title: "Nerve — One Human, Many Agents",
+  description: "The Attention Router for AI Agents.",
 };
 
 export default function RootLayout({
